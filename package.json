@@ -53,6 +53,7 @@
     "g-i-s":"2.1.7",
     "mongoose": "^8.9.4",
     "node-cache": "5.1.2",
-    "mime-types": "3.0.1"
+    "mime-types": "3.0.1",
+    "human-readable": "0.2.1"
   }
 }
