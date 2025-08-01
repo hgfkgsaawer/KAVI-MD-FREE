@@ -5,7 +5,7 @@ function convertToBool(text, fault = 'true') {
     return text === fault ? true : false;
 }
 module.exports = {
-SESSION_ID: process.env.SESSION_ID || "Your session", // session id  
+SESSION_ID: process.env.SESSION_ID || "3FVR1SjD#7VWZIpe-0r_Sgm4_wJT_OqRDq008TLQbQQcNie3eLWM", // session id  
 AUTO_READ_STATUS: process.env.AUTO_READ_STATUS || "true",
 MODE: process.env.MODE || "public", //public , groups , inbox
 AUTO_VOICE: process.env.AUTO_VOICE || "false",
@@ -28,12 +28,12 @@ OWNER_NUMBER: process.env.OWNER_NUMBER || "94727487353", // ඔයාගෙ න�
 OWNER_EMOJI: process.env.OWNER_EMOJI || "☘️", // ඉමෝජි
 BOT_NAME: process.env.BOT_NAME || "*KAVI-MD*", // බොට් නම
 OMDB_API_KEY: process.env.OMDB_API_KEY || "76cb7f39", // omdbapi.com
-ANTI_DELETE: process.env.ANTI_DELETE || "false",
+ANTI_DELETE: process.env.ANTI_DELETE || "true",
 DELETEMSGSENDTO: process.env.DELETEMSGSENDTO === undefined ? '' : process.env.DELETEMSGSENDTO,
 INBOX_BLOCK: process.env.INBOX_BLOCK || "false",
 AUTO_STATUS_REACT: process.env.AUTO_STATUS_REACT || "true",
 AUTO_STATUS_REPLY: process.env.AUTO_STATUS_REPLY || "true",
 OWNER_NAME: process.env.OWNER_NAME || "Kavidu Rasanga", // නම
 FOOTER: process.env.FOOTER || "> *ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴋᴀᴠɪᴅᴜ ʀᴀꜱᴀɴɢᴀ  👨‍💻*",
-MOVIE_FOOTER: process.env.MOVIE_FOOTER || "*YOUR MOVIE NAME 🥚*", //Movie footer  
+MOVIE_FOOTER: process.env.MOVIE_FOOTER || "> *Movie 🍃*", //Movie footer  
 };
