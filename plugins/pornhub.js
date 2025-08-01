@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { cmd } = require("../lib/command");
+const { cmd } = require("../command");
 const config = require("../config");
 
 const apilink = "https://darkyasiya-new-movie-api.vercel.app/";
