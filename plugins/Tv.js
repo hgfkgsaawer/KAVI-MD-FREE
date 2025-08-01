@@ -4,112 +4,134 @@ const config = require('../config');
 
 cmd({
   pattern: 'tvs',
-  desc: 'Search and download Sinhala Subbed TV Shows',
+  desc: 'Search and download SinhalaSub TV Shows',
   category: 'download',
-  filename: __filename,
-  use: '.tvshow <search>'
+  react: '📺',
+  filename: __filename
 }, async (conn, mek, m, { from, q }) => {
   if (!q) {
-    return await conn.sendMessage(from, { text: '📺 *Usage:* .tvshow <search term>\n\nExample: `.tvshow Money Heist`' }, { quoted: mek });
+    await conn.sendMessage(from, { text: 'Usage: .tvshow <search term>\nExample: .tvshow Gaalivaana' }, { quoted: mek });
+    return;
   }
 
   try {
-    // 1. SEARCH SHOWS
+    // 1. Search TV Shows
     const searchUrl = `https://supun-md-mv.vercel.app/api/sinhalasub-tvshow2/search?q=${encodeURIComponent(q)}`;
     const searchRes = await axios.get(searchUrl);
-    const results = searchRes.data.results;
+    const shows = searchRes.data.results;
 
-    if (!results || results.length === 0) {
-      return await conn.sendMessage(from, { text: '❌ No shows found.' }, { quoted: mek });
+    if (!shows || shows.length === 0) {
+      await conn.sendMessage(from, { text: 'No TV shows found.' }, { quoted: mek });
+      return;
     }
 
-    let txt = '*📺 TV Shows Found:*\n\n';
-    results.slice(0, 10).forEach((s, i) => {
-      txt += `${i + 1}. *${s.title}*\n${s.link}\n\n`;
+    // 2. Send list of TV shows
+    let text = '*TV Shows Found:*\n\n';
+    shows.forEach((show, i) => {
+      text += `${i + 1}. *${show.Title}*\n${show.Desc}\n\n`;
     });
-    txt += '_Reply with a number to select_';
+    text += '_Reply with the number of the TV show you want._';
 
-    const sent = await conn.sendMessage(from, { text: txt }, { quoted: mek });
+    const listMsg = await conn.sendMessage(from, {
+      image: { url: shows[0].Img },
+      caption: text
+    }, { quoted: mek });
 
-    const handler = async ({ messages }) => {
-      const msg = messages?.[0];
-      if (!msg?.message?.extendedTextMessage) return;
-      const text = msg.message.extendedTextMessage.text.trim();
-      const replyTo = msg.message.extendedTextMessage.contextInfo?.stanzaId;
+    // 3. Listen for user's reply with TV show number
+    const handleShowChoice = async ({ messages }) => {
+      const reply = messages?.[0];
+      if (!reply?.message?.extendedTextMessage) return;
+      const replyText = reply.message.extendedTextMessage.text.trim();
+      const replyId = reply.message.extendedTextMessage.contextInfo?.stanzaId;
 
-      if (replyTo !== sent.key.id) return;
+      // Check if reply is to our list message
+      if (replyId !== listMsg.key.id) return;
 
-      const num = parseInt(text);
-      const selected = results[num - 1];
-      if (!selected) {
-        await conn.sendMessage(from, { text: '❌ Invalid selection.' }, { quoted: msg });
+      const choice = parseInt(replyText);
+      const selectedShow = shows[choice - 1];
+
+      if (!selectedShow) {
+        await conn.sendMessage(from, { text: 'Invalid selection.' }, { quoted: reply });
         return;
       }
 
-      // 2. GET INFO / EPISODES
-      const infoUrl = `https://supun-md-mv.vercel.app/api/sinhalasub-tvshow2/info?url=${encodeURIComponent(selected.link)}`;
+      // 4. Fetch episodes list
+      const infoUrl = `https://supun-md-mv.vercel.app/api/sinhalasub-tvshow2/info?url=${encodeURIComponent(selectedShow.Link)}`;
       const infoRes = await axios.get(infoUrl);
-      const eps = infoRes.data.episodes;
+      const episodes = infoRes.data.episodes;
 
-      if (!eps || eps.length === 0) {
-        await conn.sendMessage(from, { text: '❌ No episodes found.' }, { quoted: msg });
+      if (!episodes || episodes.length === 0) {
+        await conn.sendMessage(from, { text: 'No episodes found.' }, { quoted: reply });
         return;
       }
 
-      let epList = `*🎞️ Episodes of ${selected.title}:*\n\n`;
-      eps.slice(0, 15).forEach((ep, i) => {
-        epList += `${i + 1}. ${ep.title}\n${ep.link}\n\n`;
+      // 5. Send episode list
+      let epText = `*${selectedShow.Title}*\n\nEpisodes:\n\n`;
+      episodes.forEach((ep, i) => {
+        epText += `${i + 1}. *${ep.Title}*\n\n`;
       });
-      epList += '_Reply with an episode number to download_';
+      epText += '_Reply with the episode number to download._';
 
-      const listEp = await conn.sendMessage(from, { text: epList }, { quoted: msg });
+      const epListMsg = await conn.sendMessage(from, {
+        image: { url: selectedShow.Img },
+        caption: epText
+      }, { quoted: reply });
 
-      const epHandler = async ({ messages }) => {
-        const emsg = messages?.[0];
-        if (!emsg?.message?.extendedTextMessage) return;
-        const replyToEp = emsg.message.extendedTextMessage.contextInfo?.stanzaId;
-        const epNum = parseInt(emsg.message.extendedTextMessage.text.trim());
+      // 6. Listen for episode selection
+      const handleEpisodeChoice = async ({ messages }) => {
+        const epReply = messages?.[0];
+        if (!epReply?.message?.extendedTextMessage) return;
+        const epReplyText = epReply.message.extendedTextMessage.text.trim();
+        const epReplyId = epReply.message.extendedTextMessage.contextInfo?.stanzaId;
 
-        if (replyToEp !== listEp.key.id) return;
+        if (epReplyId !== epListMsg.key.id) return;
 
-        const ep = eps[epNum - 1];
-        if (!ep) {
-          await conn.sendMessage(from, { text: '❌ Invalid episode number.' }, { quoted: emsg });
+        const epChoice = parseInt(epReplyText);
+        const selectedEp = episodes[epChoice - 1];
+
+        if (!selectedEp) {
+          await conn.sendMessage(from, { text: 'Invalid episode number.' }, { quoted: epReply });
           return;
         }
 
-        // 3. DOWNLOAD EPISODE
-        const dlUrl = `https://supun-md-mv.vercel.app/api/sinhalasub-tvshow2/dl?url=${encodeURIComponent(ep.link)}`;
+        // 7. Download link
+        const dlUrl = `https://supun-md-mv.vercel.app/api/sinhalasub-tvshow2/dl?url=${encodeURIComponent(selectedEp.Link)}`;
         const dlRes = await axios.get(dlUrl);
-        const file = dlRes.data;
+        const links = dlRes.data.movie?.download_links || [];
 
-        if (!file?.url) {
-          await conn.sendMessage(from, { text: '❌ Download link not found.' }, { quoted: emsg });
+        const pick = links.find(x => x.direct_download);
+        if (!pick) {
+          await conn.sendMessage(from, { text: 'Download link not found.' }, { quoted: epReply });
           return;
         }
 
-        const fname = `${selected.title} - ${ep.title}.mp4`.replace(/[\\/:*?"<>|]/g, '');
+        // 8. Send video document
+        const fileName = `KAVI ツ • ${selectedEp.Title.replace(/[\\/:*?"<>|]/g, '')}.mp4`;
 
-        await conn.sendMessage(
-          from,
-          {
-            document: { url: file.url },
+        try {
+          await conn.sendMessage(from, {
+            document: { url: pick.direct_download },
             mimetype: 'video/mp4',
-            fileName: fname,
-            caption: `🎞️ *${selected.title}*\n📺 *${ep.title}*\n📥 Size: ${file.size || 'Unknown'}\n\n${config.MOVIE_FOOTER || ''}`
-          },
-          { quoted: emsg }
-        );
-        conn.ev.off('messages.upsert', epHandler);
+            fileName,
+            caption: `🎬 ${selectedEp.Title}\nSize: ${pick.size || 'Unknown'}\n\n${config.MOVIE_FOOTER || ''}`
+          }, { quoted: epReply });
+
+          await conn.sendMessage(from, { react: { text: '✅', key: epReply.key } });
+        } catch {
+          await conn.sendMessage(from, { text: `Failed to send video.\nDirect link:\n${pick.direct_download}` }, { quoted: epReply });
+        }
+
+        conn.ev.off('messages.upsert', handleEpisodeChoice);
       };
 
-      conn.ev.on('messages.upsert', epHandler);
-      conn.ev.off('messages.upsert', handler);
+      conn.ev.on('messages.upsert', handleEpisodeChoice);
+      conn.ev.off('messages.upsert', handleShowChoice);
     };
 
-    conn.ev.on('messages.upsert', handler);
-  } catch (e) {
-    console.error(e);
-    await conn.sendMessage(from, { text: `❌ Error: ${e.message}` }, { quoted: mek });
+    conn.ev.on('messages.upsert', handleShowChoice);
+
+  } catch (error) {
+    console.error(error);
+    await conn.sendMessage(from, { text: `Error: ${error.message}` }, { quoted: mek });
   }
 });
